@@ -1,0 +1,122 @@
+import '../models/result_model.dart';
+
+class DummyResultData {
+  static final List<ExamResultModel> examResults = [
+    const ExamResultModel(
+      id: 'RES-TERM1-2026',
+      examTitle: 'Term 1 Examination',
+      academicYear: '2026-2027',
+      semester: 'Semester 1',
+      overallGrade: 'A+',
+      classRank: 4,
+      totalStudentsInClass: 38,
+      teacherRemarks:
+          'Rahul has shown exceptional analytical competence in Mathematics and Computer Science. Continues to exhibit exemplary discipline, military drill participation, and leadership qualities.',
+      publishedDate: '15 July 2026',
+      subjects: [
+        SubjectScoreModel(
+          subjectName: 'Mathematics',
+          marksObtained: 95.0,
+          totalMarks: 100.0,
+          grade: 'A1',
+          remarks: 'Outstanding performance in Algebra and Trigonometry.',
+          classAverage: 76.5,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Computer Science',
+          marksObtained: 97.0,
+          totalMarks: 100.0,
+          grade: 'A1',
+          remarks: 'Excellent practical programming concepts and logic design.',
+          classAverage: 81.0,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Physics',
+          marksObtained: 91.0,
+          totalMarks: 100.0,
+          grade: 'A1',
+          remarks: 'Strong numerical problem solving and conceptual clarity.',
+          classAverage: 72.4,
+        ),
+        SubjectScoreModel(
+          subjectName: 'English Language & Lit',
+          marksObtained: 88.0,
+          totalMarks: 100.0,
+          grade: 'A2',
+          remarks: 'Very good vocabulary and essay writing skills.',
+          classAverage: 74.0,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Chemistry',
+          marksObtained: 86.0,
+          totalMarks: 100.0,
+          grade: 'A2',
+          remarks: 'Good command over inorganic reactions and lab experiments.',
+          classAverage: 70.8,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Social Science (Hist/Geo)',
+          marksObtained: 84.0,
+          totalMarks: 100.0,
+          grade: 'A2',
+          remarks: 'Consistent effort. Map work needs a bit more precision.',
+          classAverage: 73.2,
+        ),
+      ],
+    ),
+    const ExamResultModel(
+      id: 'RES-UT1-2026',
+      examTitle: 'Unit Test – 1 Assessment',
+      academicYear: '2026-2027',
+      semester: 'Periodic Test',
+      overallGrade: 'A1',
+      classRank: 3,
+      totalStudentsInClass: 38,
+      teacherRemarks:
+          'Consistent score across all foundation subjects. Good start to the academic year.',
+      publishedDate: '10 May 2026',
+      subjects: [
+        SubjectScoreModel(
+          subjectName: 'Mathematics',
+          marksObtained: 48.0,
+          totalMarks: 50.0,
+          grade: 'A1',
+          remarks: 'Full marks in arithmetic sequence questions.',
+          classAverage: 37.0,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Physics',
+          marksObtained: 46.0,
+          totalMarks: 50.0,
+          grade: 'A1',
+          remarks: 'Neat circuit diagram and numerical formulas.',
+          classAverage: 35.5,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Chemistry',
+          marksObtained: 44.0,
+          totalMarks: 50.0,
+          grade: 'A1',
+          remarks: 'Well written chemical equations.',
+          classAverage: 34.0,
+        ),
+        SubjectScoreModel(
+          subjectName: 'English',
+          marksObtained: 43.0,
+          totalMarks: 50.0,
+          grade: 'A2',
+          remarks: 'Good grammar and comprehension score.',
+          classAverage: 36.2,
+        ),
+        SubjectScoreModel(
+          subjectName: 'Computer Science',
+          marksObtained: 49.0,
+          totalMarks: 50.0,
+          grade: 'A1',
+          remarks: 'Top score in the class for Python fundamentals.',
+          classAverage: 39.8,
+        ),
+      ],
+    ),
+  ];
+}
