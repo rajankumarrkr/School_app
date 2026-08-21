@@ -7,7 +7,9 @@ import '../models/attendance_model.dart';
 import '../models/exam_model.dart';
 import '../models/fee_model.dart';
 import '../models/notification_model.dart';
+import '../models/user_role_model.dart';
 import '../data/dummy_student_data.dart';
+import '../data/dummy_staff_data.dart';
 import '../data/dummy_homework_data.dart';
 import '../data/dummy_notice_data.dart';
 import '../data/dummy_timetable_data.dart';
@@ -24,7 +26,11 @@ class MockSchoolRepository implements SchoolRepository {
   factory MockSchoolRepository() => _instance;
   MockSchoolRepository._internal();
 
+  UserRole _activeRole = UserRole.student;
   StudentModel _activeStudent = DummyStudentData.currentStudent;
+  TeacherModel _activeTeacher = DummyStaffData.teachers.first;
+  AdminModel _activeAdmin = DummyStaffData.admin;
+
   final List<HomeworkModel> _homeworkList = List.from(DummyHomeworkData.homeworkList);
   final List<NoticeModel> _noticeList = List.from(DummyNoticeData.noticeList);
   final List<NotificationItemModel> _notifications = List.from(DummyNotificationData.notificationList);
@@ -33,6 +39,58 @@ class MockSchoolRepository implements SchoolRepository {
 
   void switchStudent(StudentModel student) {
     _activeStudent = student;
+  }
+
+  @override
+  UserRole getActiveRole() => _activeRole;
+
+  @override
+  StudentModel getActiveStudent() => _activeStudent;
+
+  @override
+  TeacherModel? getActiveTeacher() => _activeTeacher;
+
+  @override
+  AdminModel? getActiveAdmin() => _activeAdmin;
+
+  @override
+  Future<bool> login(String studentId, String password) async {
+    return loginWithRole(studentId, password, UserRole.student);
+  }
+
+  @override
+  Future<bool> loginWithRole(String username, String password, UserRole role) async {
+    await Future.delayed(const Duration(milliseconds: 350));
+    final trimmedUser = username.trim().toUpperCase();
+    final trimmedPass = password.trim();
+
+    if (trimmedUser.isEmpty || (trimmedPass != '123456' && trimmedPass.length < 4)) {
+      return false;
+    }
+
+    _activeRole = role;
+
+    switch (role) {
+      case UserRole.student:
+        final found = DummyStudentData.detailedStudents.firstWhere(
+          (s) => s.id == trimmedUser,
+          orElse: () => DummyStudentData.detailedStudents.first,
+        );
+        _activeStudent = found;
+        return true;
+
+      case UserRole.teacher:
+        final found = DummyStaffData.teachers.firstWhere(
+          (t) => t.id == trimmedUser || t.employeeId == trimmedUser,
+          orElse: () => DummyStaffData.teachers.first,
+        );
+        _activeTeacher = found;
+        return true;
+
+      case UserRole.admin:
+        _activeAdmin = DummyStaffData.admin;
+        return true;
+    }
   }
 
   @override
@@ -148,20 +206,58 @@ class MockSchoolRepository implements SchoolRepository {
     }
   }
 
+  // Teacher specific implementations
   @override
-  Future<bool> login(String studentId, String password) async {
-    await Future.delayed(const Duration(milliseconds: 400));
-    // Demo credentials check
-    final trimmedId = studentId.trim().toUpperCase();
-    final trimmedPass = password.trim();
-    if (trimmedId.isNotEmpty && (trimmedPass == '123456' || trimmedPass.length >= 4)) {
-      final found = DummyStudentData.detailedStudents.firstWhere(
-        (s) => s.id == trimmedId,
-        orElse: () => DummyStudentData.detailedStudents.first,
-      );
-      _activeStudent = found;
-      return true;
-    }
-    return false;
+  Future<List<TeacherModel>> getAllTeachers() async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    return List.unmodifiable(DummyStaffData.teachers);
+  }
+
+  @override
+  Future<List<TeacherAttendanceStudent>> getStudentsForAttendance(String className, String section) async {
+    await Future.delayed(const Duration(milliseconds: 150));
+    final roster = DummyStudentData.getAllStudentsRoster();
+    final filtered = roster.where((s) => s.className == className && s.section == section).toList();
+    final sourceList = filtered.isNotEmpty ? filtered : roster.take(15).toList();
+
+    return sourceList.map((s) => TeacherAttendanceStudent(
+      studentId: s.id,
+      rollNumber: s.rollNumber,
+      fullName: s.fullName,
+      avatarUrl: s.avatarUrl,
+      status: AttendanceStatus.present,
+    )).toList();
+  }
+
+  @override
+  Future<bool> submitClassAttendance(
+    String className,
+    String section,
+    DateTime date,
+    List<TeacherAttendanceStudent> records,
+  ) async {
+    await Future.delayed(const Duration(milliseconds: 300));
+    return true;
+  }
+
+  @override
+  Future<bool> createHomework(HomeworkModel homework) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    _homeworkList.insert(0, homework);
+    return true;
+  }
+
+  // Admin specific implementations
+  @override
+  Future<bool> publishNotice(NoticeModel notice) async {
+    await Future.delayed(const Duration(milliseconds: 250));
+    _noticeList.insert(0, notice);
+    return true;
+  }
+
+  @override
+  Future<AdminStatsModel> getAdminStats() async {
+    await Future.delayed(const Duration(milliseconds: 200));
+    return DummyStaffData.stats;
   }
 }

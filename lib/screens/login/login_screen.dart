@@ -3,6 +3,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
+import '../../models/user_role_model.dart';
 import '../../repositories/mock_school_repository.dart';
 import '../../routes/app_routes.dart';
 
@@ -15,7 +16,9 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _studentIdController = TextEditingController(text: 'STU001');
+  UserRole _selectedRole = UserRole.student;
+
+  final _usernameController = TextEditingController(text: 'STU001');
   final _passwordController = TextEditingController(text: '123456');
   bool _obscurePassword = true;
   bool _isLoading = false;
@@ -23,9 +26,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _studentIdController.dispose();
+    _usernameController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _onRoleChanged(UserRole newRole) {
+    setState(() {
+      _selectedRole = newRole;
+      _errorMessage = null;
+      _passwordController.text = '123456';
+      switch (newRole) {
+        case UserRole.student:
+          _usernameController.text = 'STU001';
+          break;
+        case UserRole.teacher:
+          _usernameController.text = 'TCH001';
+          break;
+        case UserRole.admin:
+          _usernameController.text = 'ADM001';
+          break;
+      }
+    });
   }
 
   Future<void> _handleLogin() async {
@@ -36,9 +58,10 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final success = await MockSchoolRepository().login(
-      _studentIdController.text,
+    final success = await MockSchoolRepository().loginWithRole(
+      _usernameController.text,
       _passwordController.text,
+      _selectedRole,
     );
 
     if (!mounted) return;
@@ -48,17 +71,27 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     if (success) {
-      Navigator.pushReplacementNamed(context, AppRoutes.mainLayout);
+      switch (_selectedRole) {
+        case UserRole.student:
+          Navigator.pushReplacementNamed(context, AppRoutes.mainLayout);
+          break;
+        case UserRole.teacher:
+          Navigator.pushReplacementNamed(context, AppRoutes.teacherMain);
+          break;
+        case UserRole.admin:
+          Navigator.pushReplacementNamed(context, AppRoutes.adminMain);
+          break;
+      }
     } else {
       setState(() {
-        _errorMessage = 'Invalid Student ID or password. (Demo: STU001 / 123456)';
+        _errorMessage = 'Invalid ID or password. (Demo: Use quick buttons below with password 123456)';
       });
     }
   }
 
   void _fillDemoCredentials(String id, String name) {
     setState(() {
-      _studentIdController.text = id;
+      _usernameController.text = id;
       _passwordController.text = '123456';
       _errorMessage = null;
     });
@@ -122,12 +155,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    String idLabel;
+    String idHint;
+    IconData idIcon;
+
+    switch (_selectedRole) {
+      case UserRole.student:
+        idLabel = 'Student ID / Username';
+        idHint = 'e.g. STU001';
+        idIcon = Icons.badge_outlined;
+        break;
+      case UserRole.teacher:
+        idLabel = 'Faculty / Employee ID';
+        idHint = 'e.g. TCH001';
+        idIcon = Icons.co_present_outlined;
+        break;
+      case UserRole.admin:
+        idLabel = 'Administrator ID';
+        idHint = 'e.g. ADM001';
+        idIcon = Icons.admin_panel_settings_outlined;
+        break;
+    }
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
             child: Form(
               key: _formKey,
               child: Column(
@@ -137,8 +192,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   // School Crest Top Icon
                   Center(
                     child: Container(
-                      width: 68,
-                      height: 68,
+                      width: 64,
+                      height: 64,
                       decoration: BoxDecoration(
                         color: AppColors.primaryNavy,
                         borderRadius: BorderRadius.circular(18),
@@ -153,11 +208,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Icon(
                         Icons.shield_rounded,
                         color: AppColors.accentGold,
-                        size: 38,
+                        size: 36,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 16),
 
                   // School Name
                   Text(
@@ -169,26 +224,30 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 6),
 
                   // Welcome Heading
                   Text(
-                    'Welcome Back 👋',
+                    'School Portal Login',
                     style: AppTextStyles.displayMedium.copyWith(
                       color: AppColors.textPrimary,
                       fontWeight: FontWeight.w800,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    'Sign in to access your student dashboard & academics',
-                    style: AppTextStyles.bodyMedium.copyWith(
+                    'Select your account role and sign in below',
+                    style: AppTextStyles.bodySmall.copyWith(
                       color: AppColors.textSecondary,
                     ),
                     textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 20),
+
+                  // Segmented Role Switcher
+                  _buildRoleSelector(),
+                  const SizedBox(height: 24),
 
                   // Error Banner
                   if (_errorMessage != null) ...[
@@ -219,20 +278,20 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(height: 18),
                   ],
 
-                  // Student ID field
+                  // User ID field
                   CustomTextField(
-                    label: 'Student ID / Username',
-                    hint: 'e.g. STU001',
-                    controller: _studentIdController,
-                    prefixIcon: Icons.badge_outlined,
+                    label: idLabel,
+                    hint: idHint,
+                    controller: _usernameController,
+                    prefixIcon: idIcon,
                     validator: (value) {
                       if (value == null || value.trim().isEmpty) {
-                        return 'Please enter your Student ID';
+                        return 'Please enter your ID';
                       }
                       return null;
                     },
                   ),
-                  const SizedBox(height: 18),
+                  const SizedBox(height: 16),
 
                   // Password field
                   CustomTextField(
@@ -262,7 +321,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 8),
 
                   // Forgot Password
                   Align(
@@ -283,56 +342,19 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
 
                   // Login Button
                   CustomButton(
-                    text: 'Sign In',
+                    text: _getLoginButtonText(),
                     isLoading: _isLoading,
                     onPressed: _handleLogin,
                     icon: Icons.login_rounded,
                   ),
-                  const SizedBox(height: 28),
+                  const SizedBox(height: 24),
 
                   // Quick Demo Switcher Section
-                  Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      color: AppColors.surface,
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: AppColors.surfaceSubtle),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            const Icon(Icons.flash_on_rounded,
-                                size: 16, color: AppColors.accentGold),
-                            const SizedBox(width: 6),
-                            Text(
-                              'Quick Demo Accounts',
-                              style: AppTextStyles.labelSmall.copyWith(
-                                color: AppColors.textPrimary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            _buildDemoChip('STU001', 'Rahul (10-A)'),
-                            _buildDemoChip('STU002', 'Ananya (10-A)'),
-                            _buildDemoChip('STU003', 'Arjun (10-A)'),
-                            _buildDemoChip('STU004', 'Pooja (10-B)'),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildQuickDemoSection(),
                   const SizedBox(height: 20),
 
                   // Help Footer
@@ -344,7 +366,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             size: 16, color: AppColors.textMuted),
                         const SizedBox(width: 6),
                         Text(
-                          'Need help? Contact School Admin',
+                          'Need help? Contact School IT Desk',
                           style: AppTextStyles.bodySmall.copyWith(
                             color: AppColors.textMuted,
                           ),
@@ -361,8 +383,140 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  String _getLoginButtonText() {
+    switch (_selectedRole) {
+      case UserRole.student:
+        return 'Sign In as Student';
+      case UserRole.teacher:
+        return 'Sign In as Faculty';
+      case UserRole.admin:
+        return 'Sign In as School Admin';
+    }
+  }
+
+  Widget _buildRoleSelector() {
+    return Container(
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceSecondary,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.surfaceSubtle),
+      ),
+      child: Row(
+        children: [
+          _buildRoleTab('Student', Icons.school_rounded, UserRole.student),
+          _buildRoleTab('Teacher', Icons.co_present_rounded, UserRole.teacher),
+          _buildRoleTab('Admin', Icons.admin_panel_settings_rounded, UserRole.admin),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRoleTab(String label, IconData icon, UserRole role) {
+    final isSelected = _selectedRole == role;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => _onRoleChanged(role),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primaryNavy : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: AppColors.primaryNavy.withOpacity(0.2),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 16,
+                color: isSelected ? Colors.white : AppColors.textSecondary,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : AppColors.textSecondary,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickDemoSection() {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.surfaceSubtle),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.flash_on_rounded, size: 16, color: AppColors.accentGold),
+              const SizedBox(width: 6),
+              Text(
+                '1-Tap Demo Credentials (${_selectedRole.name.toUpperCase()})',
+                style: AppTextStyles.labelSmall.copyWith(
+                  color: AppColors.textPrimary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _buildRoleDemoChips(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  List<Widget> _buildRoleDemoChips() {
+    switch (_selectedRole) {
+      case UserRole.student:
+        return [
+          _buildDemoChip('STU001', 'Rahul (10-A)'),
+          _buildDemoChip('STU002', 'Ananya (10-A)'),
+          _buildDemoChip('STU003', 'Arjun (10-A)'),
+          _buildDemoChip('STU004', 'Pooja (10-B)'),
+        ];
+      case UserRole.teacher:
+        return [
+          _buildDemoChip('TCH001', 'Dr. Ramanujam (Physics)'),
+          _buildDemoChip('TCH002', 'Mrs. Mukherjee (Maths)'),
+          _buildDemoChip('TCH003', 'Mrs. Thomas (English)'),
+          _buildDemoChip('TCH004', 'Mr. Gupta (CS/AI)'),
+        ];
+      case UserRole.admin:
+        return [
+          _buildDemoChip('ADM001', 'Col. V. P. Malhotra (Principal / Admin)'),
+        ];
+    }
+  }
+
   Widget _buildDemoChip(String id, String label) {
-    final isSelected = _studentIdController.text == id;
+    final isSelected = _usernameController.text == id;
     return GestureDetector(
       onTap: () => _fillDemoCredentials(id, label),
       child: Container(

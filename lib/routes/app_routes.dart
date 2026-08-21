@@ -17,6 +17,13 @@ import '../screens/notices/notice_detail_screen.dart';
 import '../screens/notifications/notifications_screen.dart';
 import '../screens/fees/fees_screen.dart';
 import '../screens/contact/contact_screen.dart';
+import '../screens/teacher/teacher_main_layout.dart';
+import '../screens/teacher/teacher_attendance_screen.dart';
+import '../screens/teacher/teacher_homework_screen.dart';
+import '../screens/admin/admin_main_layout.dart';
+import '../screens/admin/admin_directory_screen.dart';
+import '../screens/admin/admin_fee_overview_screen.dart';
+import '../screens/admin/admin_notice_manager_screen.dart';
 
 class AppRoutes {
   static const String splash = '/';
@@ -35,6 +42,17 @@ class AppRoutes {
   static const String notifications = '/notifications';
   static const String fees = '/fees';
   static const String contact = '/contact';
+
+  // Teacher routes
+  static const String teacherMain = '/teacher-main';
+  static const String teacherAttendance = '/teacher-attendance';
+  static const String teacherHomework = '/teacher-homework';
+
+  // Admin routes
+  static const String adminMain = '/admin-main';
+  static const String adminDirectory = '/admin-directory';
+  static const String adminFees = '/admin-fees';
+  static const String adminNotices = '/admin-notices';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
@@ -94,6 +112,35 @@ class AppRoutes {
 
       case contact:
         return MaterialPageRoute(builder: (_) => const ContactScreen());
+
+      // Teacher Portal Routes
+      case teacherMain:
+        final initialIndex = settings.arguments as int? ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => TeacherMainLayoutScreen(initialIndex: initialIndex),
+        );
+
+      case teacherAttendance:
+        return MaterialPageRoute(builder: (_) => const TeacherAttendanceScreen());
+
+      case teacherHomework:
+        return MaterialPageRoute(builder: (_) => const TeacherHomeworkScreen());
+
+      // Admin Portal Routes
+      case adminMain:
+        final initialIndex = settings.arguments as int? ?? 0;
+        return MaterialPageRoute(
+          builder: (_) => AdminMainLayoutScreen(initialIndex: initialIndex),
+        );
+
+      case adminDirectory:
+        return MaterialPageRoute(builder: (_) => const AdminDirectoryScreen());
+
+      case adminFees:
+        return MaterialPageRoute(builder: (_) => const AdminFeeOverviewScreen());
+
+      case adminNotices:
+        return MaterialPageRoute(builder: (_) => const AdminNoticeManagerScreen());
 
       default:
         return MaterialPageRoute(
