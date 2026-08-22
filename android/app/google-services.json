@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "20546983337",
+    "project_id": "worth-rm-soldier-school",
+    "storage_bucket": "worth-rm-soldier-school.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:20546983337:android:5075dc850b4e78abc8e0b8",
+        "android_client_info": {
+          "package_name": "com.worthrm.school.worth_soldier_school"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBwqwSRFjRNVBEZniJMUw25Ny4QOiJMyGE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
