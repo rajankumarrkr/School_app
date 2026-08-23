@@ -4,7 +4,7 @@ import '../../theme/app_text_styles.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../models/user_role_model.dart';
-import '../../repositories/mock_school_repository.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -58,19 +58,16 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    final success = await MockSchoolRepository().loginWithRole(
-      _usernameController.text,
-      _passwordController.text,
-      _selectedRole,
-    );
+    try {
+      final authService = FirebaseAuthService();
+      await authService.signIn(
+        _usernameController.text,
+        _passwordController.text,
+        _selectedRole,
+      );
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    setState(() {
-      _isLoading = false;
-    });
-
-    if (success) {
       switch (_selectedRole) {
         case UserRole.student:
           Navigator.pushReplacementNamed(context, AppRoutes.mainLayout);
@@ -82,10 +79,22 @@ class _LoginScreenState extends State<LoginScreen> {
           Navigator.pushReplacementNamed(context, AppRoutes.adminMain);
           break;
       }
-    } else {
+    } on FirebaseAuthServiceException catch (e) {
+      if (!mounted) return;
       setState(() {
-        _errorMessage = 'Invalid ID or password. (Demo: Use quick buttons below with password 123456)';
+        _errorMessage = e.message;
       });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'An unexpected error occurred. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -351,6 +360,39 @@ class _LoginScreenState extends State<LoginScreen> {
                     onPressed: _handleLogin,
                     icon: Icons.login_rounded,
                   ),
+                  if (_selectedRole == UserRole.student) ...[
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, AppRoutes.register);
+                        },
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'New student? ',
+                            style: AppTextStyles.bodySmall.copyWith(
+                              color: AppColors.textMuted,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Create account',
+                                style: AppTextStyles.bodySmall.copyWith(
+                                  color: AppColors.accentBlue,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 24),
 
                   // Quick Demo Switcher Section

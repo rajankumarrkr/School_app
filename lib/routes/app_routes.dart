@@ -3,6 +3,7 @@ import '../models/homework_model.dart';
 import '../models/notice_model.dart';
 import '../screens/splash/splash_screen.dart';
 import '../screens/login/login_screen.dart';
+import '../screens/login/student_register_screen.dart';
 import '../screens/main_layout.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -28,6 +29,7 @@ import '../screens/admin/admin_notice_manager_screen.dart';
 class AppRoutes {
   static const String splash = '/';
   static const String login = '/login';
+  static const String register = '/register';
   static const String mainLayout = '/main';
   static const String home = '/home';
   static const String profile = '/profile';
@@ -61,6 +63,9 @@ class AppRoutes {
 
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+
+      case register:
+        return MaterialPageRoute(builder: (_) => const StudentRegisterScreen());
 
       case mainLayout:
         final initialIndex = settings.arguments as int? ?? 0;

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../repositories/mock_school_repository.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../widgets/app_card.dart';
 import '../../routes/app_routes.dart';
 
@@ -124,7 +125,9 @@ class AdminSettingsScreen extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  onPressed: () {
+                  onPressed: () async {
+                    await FirebaseAuthService().signOut();
+                    if (!context.mounted) return;
                     Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
                   },
                   icon: const Icon(Icons.logout_rounded, size: 18),

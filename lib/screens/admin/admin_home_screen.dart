@@ -3,6 +3,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_card.dart';
 import '../../repositories/mock_school_repository.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class AdminHomeScreen extends StatelessWidget {
@@ -125,7 +126,9 @@ class AdminHomeScreen extends StatelessWidget {
                         const Spacer(),
                         IconButton(
                           icon: const Icon(Icons.logout_rounded, color: Colors.white70, size: 20),
-                          onPressed: () {
+                          onPressed: () async {
+                            await FirebaseAuthService().signOut();
+                            if (!context.mounted) return;
                             Navigator.pushReplacementNamed(context, AppRoutes.login);
                           },
                           tooltip: 'Logout',

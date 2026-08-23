@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../models/student_model.dart';
+import '../../models/app_user_model.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 import '../../widgets/app_card.dart';
 import '../../widgets/custom_button.dart';
 import '../../widgets/custom_text_field.dart';
 import '../../repositories/mock_school_repository.dart';
+import '../../services/firebase_auth_service.dart';
 import '../../routes/app_routes.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -19,6 +21,7 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   final _repository = MockSchoolRepository();
+  AppUser? _appUser;
   late StudentModel _student;
   bool _isLoading = true;
 
@@ -28,19 +31,53 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadProfile();
   }
 
-  void _loadProfile() {
+  Future<void> _loadProfile() async {
     setState(() {
-      _student = _repository.currentStudent;
-      _isLoading = false;
+      _isLoading = true;
     });
+
+    try {
+      if (FirebaseAuthService().currentUser != null) {
+        final appUser = await FirebaseAuthService().getUserProfile();
+        if (mounted) {
+          setState(() {
+            _appUser = appUser;
+            _student = _repository.currentStudent.copyWith(
+              id: appUser.userId.isNotEmpty ? appUser.userId : _repository.currentStudent.id,
+              fullName: appUser.name.isNotEmpty ? appUser.name : _repository.currentStudent.fullName,
+              email: appUser.email.isNotEmpty ? appUser.email : _repository.currentStudent.email,
+              address: appUser.address ?? _repository.currentStudent.address,
+              fatherName: appUser.parentName ?? _repository.currentStudent.fatherName,
+              fatherPhone: appUser.parentMobile ?? _repository.currentStudent.fatherPhone,
+              dateOfBirth: appUser.dateOfBirth ?? _repository.currentStudent.dateOfBirth,
+              className: appUser.className ?? _repository.currentStudent.className,
+              section: appUser.section ?? _repository.currentStudent.section,
+              rollNumber: appUser.rollNumber?.toString() ?? _repository.currentStudent.rollNumber,
+            );
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+    } catch (_) {
+      // Fall back to mock repository if not authenticated or offline
+    }
+
+    if (mounted) {
+      setState(() {
+        _student = _repository.currentStudent;
+        _isLoading = false;
+      });
+    }
   }
 
   void _showEditProfileDialog() {
+    final nameController = TextEditingController(text: _appUser?.name ?? _student.fullName);
     final phoneController = TextEditingController(text: _student.phone);
-    final emailController = TextEditingController(text: _student.email);
-    final addressController = TextEditingController(text: _student.address);
-    final fatherPhoneController =
-        TextEditingController(text: _student.fatherPhone);
+    final emailController = TextEditingController(text: _appUser?.email ?? _student.email);
+    final addressController = TextEditingController(text: _appUser?.address ?? _student.address);
+    final parentNameController = TextEditingController(text: _appUser?.parentName ?? _student.fatherName);
+    final parentPhoneController = TextEditingController(text: _appUser?.parentMobile ?? _student.fatherPhone);
 
     showModalBottomSheet(
       context: context,
@@ -66,7 +103,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Edit Contact Details',
+                    'Edit Profile Details',
                     style: AppTextStyles.headlineSmall.copyWith(
                       fontWeight: FontWeight.w700,
                     ),
@@ -79,15 +116,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 6),
               Text(
-                'Academic information is locked by school administration. You can update emergency contact details below.',
+                'Academic information (ID, Class, Section, Roll No) is locked by school administration.',
                 style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted),
               ),
               const SizedBox(height: 20),
               CustomTextField(
-                label: 'Student Mobile Number',
-                controller: phoneController,
-                keyboardType: TextInputType.phone,
-                prefixIcon: Icons.phone_outlined,
+                label: 'Full Name',
+                controller: nameController,
+                prefixIcon: Icons.person_outline_rounded,
               ),
               const SizedBox(height: 14),
               CustomTextField(
@@ -98,8 +134,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
               const SizedBox(height: 14),
               CustomTextField(
+                label: 'Parent / Guardian Name',
+                controller: parentNameController,
+                prefixIcon: Icons.people_outline_rounded,
+              ),
+              const SizedBox(height: 14),
+              CustomTextField(
                 label: 'Parent Contact Number',
-                controller: fatherPhoneController,
+                controller: parentPhoneController,
                 keyboardType: TextInputType.phone,
                 prefixIcon: Icons.phone_android_outlined,
               ),
@@ -115,11 +157,48 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 text: 'Save Changes',
                 icon: Icons.check_circle_outline_rounded,
                 onPressed: () async {
+                  if (FirebaseAuthService().currentUser != null) {
+                    try {
+                      await FirebaseAuthService().updateUserProfile(
+                        name: nameController.text,
+                        parentName: parentNameController.text,
+                        parentMobile: parentPhoneController.text,
+                        address: addressController.text,
+                        email: emailController.text,
+                      );
+                      await _loadProfile();
+                      if (context.mounted) {
+                        Navigator.pop(context);
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Profile updated successfully!'),
+                            backgroundColor: AppColors.success,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                      return;
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Failed to update profile: $e'),
+                            backgroundColor: AppColors.error,
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
+                      }
+                      return;
+                    }
+                  }
+
                   final updated = _student.copyWith(
+                    fullName: nameController.text.trim(),
                     phone: phoneController.text.trim(),
                     email: emailController.text.trim(),
                     address: addressController.text.trim(),
-                    fatherPhone: fatherPhoneController.text.trim(),
+                    fatherName: parentNameController.text.trim(),
+                    fatherPhone: parentPhoneController.text.trim(),
                   );
                   await _repository.updateStudentProfile(updated);
                   if (context.mounted) {
@@ -129,7 +208,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     });
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Profile updated successfully! (Local state)'),
+                        content: Text('Profile updated successfully!'),
                         backgroundColor: AppColors.success,
                         behavior: SnackBarBehavior.floating,
                       ),
@@ -468,7 +547,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               text: 'Log Out',
               icon: Icons.logout_rounded,
               type: ButtonType.danger,
-              onPressed: () {
+              onPressed: () async {
+                await FirebaseAuthService().signOut();
+                if (!context.mounted) return;
                 Navigator.pushNamedAndRemoveUntil(
                   context,
                   AppRoutes.login,
